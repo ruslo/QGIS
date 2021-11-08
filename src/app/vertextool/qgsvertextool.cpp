@@ -1546,6 +1546,17 @@ void QgsVertexTool::updateLockedFeatureVertices()
   }
 }
 
+double QgsVertexTool::interpolatedValueForNewPoint( const QgsPoint &newPoint, const QgsGeometry &geometry, int vertexId, bool z )
+{
+  const QgsPoint pointPrev = geometry.vertexAt( vertexId - 1 );
+  const QgsPoint pointNext = geometry.vertexAt( vertexId );
+  const double distPrev = QgsPointXY( pointPrev ).distance( QgsPointXY( newPoint ) );
+  const double distNext = QgsPointXY( pointNext ).distance( QgsPointXY( newPoint ) );
+  const double d = distPrev + distNext;
+  const double prev = z ? pointPrev.z() : pointPrev.m();
+  const double next = z ? pointNext.z() : pointNext.m();
+  return ( prev * distNext + next * distPrev ) / d;
+}
 
 void QgsVertexTool::showVertexEditor()  //#spellok
 {
@@ -2197,12 +2208,19 @@ void QgsVertexTool::moveVertex( const QgsPointXY &mapPoint, const QgsPointLocato
       }
       else
       {
-        const QgsPoint pointPrev = geom.vertexAt( dragVertexId - 1 );
-        const QgsPoint pointNext = geom.vertexAt( dragVertexId );
-        const double distPrev = QgsPointXY( pointPrev ).distance( QgsPointXY( pt ) );
-        const double distNext = QgsPointXY( pointNext ).distance( QgsPointXY( pt ) );
-        const double d = distPrev + distNext;
-        pt.addZValue( ( pointPrev.z() * distNext + pointNext.z() * distPrev ) / d );
+        pt.addZValue( interpolatedValueForNewPoint( pt, geom, dragVertexId, true ) );
+      }
+    }
+
+    if ( QgsWkbTypes::hasM( dragLayer->wkbType() ) && !pt.isMeasure() )
+    {
+      if ( addingAtEndpoint )
+      {
+        pt.addMValue( geom.vertexAt( dragVertexId ).m() );
+      }
+      else
+      {
+        pt.addMValue( interpolatedValueForNewPoint( pt, geom, dragVertexId, false ) );
       }
     }
 

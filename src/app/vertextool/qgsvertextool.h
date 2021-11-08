@@ -301,6 +301,8 @@ class APP_EXPORT QgsVertexTool : public QgsMapToolAdvancedDigitizing
     //! update the highlight of vertices from the locked feature
     void updateLockedFeatureVertices();
 
+    static double interpolatedValueForNewPoint( const QgsPoint &newPoint, const QgsGeometry &geometry, int vertexId, bool z );
+
   private:
 
     // members used for temporary highlight of stuff

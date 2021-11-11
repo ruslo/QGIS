@@ -367,7 +367,19 @@ Qgis::GeometryOperationResult QgsVectorLayerEditUtils::splitFeatures( const QgsC
     QVector<QgsGeometry> newGeometries;
     QgsPointSequence featureTopologyTestPoints;
     QgsGeometry featureGeom = feat.geometry();
+    const bool inputHasM = featureGeom.get()->isMeasure();
     splitFunctionReturn = featureGeom.splitGeometry( curve, newGeometries, preserveCircular, topologicalEditing, featureTopologyTestPoints );
+    if ( inputHasM )
+    {
+      auto setM = []( const QgsPoint & p ) { QgsPoint out( p ); out.setM( 0.0 ); return out; };
+      for ( QgsGeometry &geom : newGeometries )
+      {
+        geom.get()->addMValue();
+        geom.transformVertices( setM );
+      }
+      featureGeom.get()->addMValue();
+      featureGeom.transformVertices( setM );
+    }
     topologyTestPoints.append( featureTopologyTestPoints );
     if ( splitFunctionReturn == Qgis::GeometryOperationResult::Success )
     {
